@@ -21,6 +21,8 @@ def scrape():
     reccolumnlist.pop()
     recdf.columns = reccolumnlist
 
+    stats['receiving'] = recdf
+
     rushingURL = 'https://nextgenstats.nfl.com/stats/rushing#yards'
     browser.visit(rushingURL)
     html = browser.html
@@ -31,6 +33,8 @@ def scrape():
     rushcolumnlist = rushingtable[0].values.tolist()[0]
     rushcolumnlist.pop()
     rushdf.columns = rushcolumnlist
+
+    stats['rushing'] = rushdf
     
     passingURL = 'https://nextgenstats.nfl.com/stats/passing#yards'
     browser.visit(passingURL)
@@ -42,3 +46,7 @@ def scrape():
     passcolumnlist = passingtable[0].values.tolist()[0]
     passcolumnlist.pop()
     passdf.columns = passcolumnlist
+
+    stats['passing'] = passdf
+
+    return stats
