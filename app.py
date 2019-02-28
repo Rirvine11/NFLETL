@@ -11,6 +11,9 @@ mongo = PyMongo(app)
 rushstats = mongo.db.rushstats
 passstats = mongo.db.passstats
 recstats = mongo.db.recstats
+fantstats= mongo.db.fantstats
+schedule = mongo.db.datastats
+
 @app.route("/")
 def index():
     stats = mongo.db.stats.find_one()
@@ -19,13 +22,18 @@ def index():
 
 @app.route("/scrape")
 def scraper():
-    pass_data, rush_data, rec_data = next_gen.scrape()
+    pass_data, rush_data, rec_data, temp_data, schedule_dict = next_gen.scrape()
     passstats.drop()
     rushstats.drop()
     recstats.drop()
+    fantstats.drop()
+    schedule.drop()
     passstats.insert_many(pass_data)
     rushstats.insert_many(rush_data)
     recstats.insert_many(rec_data)
+    fantstats.insert_many(temp_data)
+    schedule.insert_many(schedule_dict)
+
     return redirect("/", code=302)
 
 

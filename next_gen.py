@@ -4,6 +4,8 @@ import os
 import pandas as pd
 import pymongo
 from splinter import Browser
+from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
 
 def init_browser():
     # @NOTE: Replace the path with your actual path to the chromedriver
@@ -12,7 +14,6 @@ def init_browser():
 
 def scrape():
     browser = init_browser()
-    stats = {}
 
     receivingURL = 'https://nextgenstats.nfl.com/stats/receiving#yards'
     browser.visit(receivingURL)
@@ -23,8 +24,6 @@ def scrape():
     recdf= pd.DataFrame(receivingtable[1])
     reccolumnlist = receivingtable[0].values.tolist()[0]
     reccolumnlist.pop()
-    for i in reccolumnlist:
-        i.replace('.','')
     recdf.columns = reccolumnlist
     recdf = recdf.rename(index=str, columns={"+/-Avg .YAC Above Expectation":"+/-Avg YAC Above Expectation"})
     recdf_dict = recdf.to_dict(orient='records')
@@ -53,6 +52,75 @@ def scrape():
     passdf.columns = passcolumnlist
     passdf_dict = passdf.to_dict(orient='records')
 
+    # List of each week number
+    weeks = list(range(1,18))
+    # Api Url
+    base_url = "http://api.fantasy.nfl.com/v1/players/stats?statType=weekStats&season=2018&week={}&form=json"
+    temp_final_df = pd.DataFrame()
+    for week in weeks:
+        target_url = base_url.format(week)
+        temp = requests.get(target_url).json()['players']
+        temp_df = pd.DataFrame(temp)
+        temp_df = temp_df.drop(columns = 'stats')
+        temp_df['week'] = week
+        temp_final_df = temp_final_df.append(temp_df)
+    team_names = temp_final_df.teamAbbr.unique()
 
+    temp_dict = temp_final_df.to_dict(orient='records')
 
-    return passdf_dict, rushdf_dict, recdf_dict
+    data = pd.read_csv(r'C:\\Users\\rirvi\Documents\\NFLETL\\2018_Schedule_City.csv')
+    data['away_abrev'] = data['Away'].str[0:4]
+    data['home_abrev'] = data['Home'].str[0:4]
+
+    away_abrev = []
+
+    for awy in data['away_abrev']:
+        away_abrev.append(process.extract(awy,team_names)[0][0])
+
+    home_abrev = []
+
+    for hme in data['home_abrev']:
+        home_abrev.append(process.extract(hme,team_names)[0][0])
+
+    data['away_abrev'] = away_abrev
+    data['home_abrev'] = home_abrev
+    schedule_dict = data.to_dict(orient='records')
+
+    return passdf_dict, rushdf_dict, recdf_dict, temp_dict, schedule_dict
+
+def points():
+        # List of each week number
+    weeks = list(range(1,18))
+    # Api Url
+    base_url = "http://api.fantasy.nfl.com/v1/players/stats?statType=weekStats&season=2018&week={}&form=json"
+    temp_final_df = pd.DataFrame()
+    for week in weeks:
+        target_url = base_url.format(week)
+        temp = requests.get(target_url).json()['players']
+        temp_df = pd.DataFrame(temp)
+        temp_df = temp_df.drop(columns = 'stats')
+        temp_df['week'] = week
+        temp_final_df = temp_final_df.append(temp_df)
+    team_names = temp_final_df.teamAbbr.unique()
+
+    temp_dict = temp_final_df.to_dict(orient='records')
+    #Schedule
+    data = pd.read_csv('./2018_Schedule_City.csv')
+    data['away_abrev'] = data['Away'].str[0:4]
+    data['home_abrev'] = data['Home'].str[0:4]
+
+    away_abrev = []
+
+    for awy in data['away_abrev']:
+        away_abrev.append(process.extract(awy,team_names)[0][0])
+
+    home_abrev = []
+
+    for hme in data['home_abrev']:
+        home_abrev.append(process.extract(hme,team_names)[0][0])
+
+    data['away_abrev'] = away_abrev
+    data['home_abrev'] = home_abrev
+    schedule_dict = data.to_dict(orient='records')
+   
+    return temp_dict, schedule_dict 
