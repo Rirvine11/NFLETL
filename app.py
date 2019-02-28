@@ -8,8 +8,9 @@ app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/nfl_app"
 mongo = PyMongo(app)
 
-stats = mongo.db.stats
-
+rushstats = mongo.db.rushstats
+passstats = mongo.db.passstats
+recstats = mongo.db.recstats
 @app.route("/")
 def index():
     stats = mongo.db.stats.find_one()
@@ -18,8 +19,13 @@ def index():
 
 @app.route("/scrape")
 def scraper():
-    stats_data = next_gen.scrape()
-    stats.update({}, stats_data, upsert=True)
+    pass_data, rush_data, rec_data = next_gen.scrape()
+    passstats.drop()
+    rushstats.drop()
+    recstats.drop()
+    passstats.insert_many(pass_data)
+    rushstats.insert_many(rush_data)
+    recstats.insert_many(rec_data)
     return redirect("/", code=302)
 
 

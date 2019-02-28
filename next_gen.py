@@ -1,5 +1,9 @@
+from bs4 import BeautifulSoup as bs
+import requests
+import os
+import pandas as pd
+import pymongo
 from splinter import Browser
-from bs4 import BeautifulSoup
 
 def init_browser():
     # @NOTE: Replace the path with your actual path to the chromedriver
@@ -19,9 +23,11 @@ def scrape():
     recdf= pd.DataFrame(receivingtable[1])
     reccolumnlist = receivingtable[0].values.tolist()[0]
     reccolumnlist.pop()
+    for i in reccolumnlist:
+        i.replace('.','')
     recdf.columns = reccolumnlist
-
-    stats['receiving'] = recdf
+    recdf = recdf.rename(index=str, columns={"+/-Avg .YAC Above Expectation":"+/-Avg YAC Above Expectation"})
+    recdf_dict = recdf.to_dict(orient='records')
 
     rushingURL = 'https://nextgenstats.nfl.com/stats/rushing#yards'
     browser.visit(rushingURL)
@@ -33,8 +39,7 @@ def scrape():
     rushcolumnlist = rushingtable[0].values.tolist()[0]
     rushcolumnlist.pop()
     rushdf.columns = rushcolumnlist
-
-    stats['rushing'] = rushdf
+    rushdf_dict = rushdf.to_dict(orient='records')
     
     passingURL = 'https://nextgenstats.nfl.com/stats/passing#yards'
     browser.visit(passingURL)
@@ -46,7 +51,8 @@ def scrape():
     passcolumnlist = passingtable[0].values.tolist()[0]
     passcolumnlist.pop()
     passdf.columns = passcolumnlist
+    passdf_dict = passdf.to_dict(orient='records')
 
-    stats['passing'] = passdf
 
-    return stats
+
+    return passdf_dict, rushdf_dict, recdf_dict
